@@ -3,7 +3,7 @@
 ## Projeto Desenvolvimento Mobile
 
 Professor: JOAO PAULO BAPTISTA VOIGTLAENDER  
-JOAO PAULO BAPTISTA VOIGTLAENDER
+
 
 ## Requisitos
 
@@ -94,15 +94,15 @@ npm run web
 
 ## Dados do Grupo
 
-- Integrante 1: NOME COMPLETO - MATRICULA
-- Integrante 2: NOME COMPLETO - MATRICULA
-- Integrante 3: NOME COMPLETO - MATRICULA
-- Integrante 4: NOME COMPLETO - MATRICULA
+- Integrante 1: Ruan da Silva Correia
+- Integrante 2: Matheus Eduardo Silva da Matta
+- Integrante 3: Victor Thadeu Procópio de Mendonça
+- Integrante 4: Eduarda Dias Vieira Dado
 
 ## Livro Escolhido
 
-- Livro: CODIGO E NOME DO LIVRO
+- Livro: Código: 081 - Sonic & Knuckles - Recordes e Façanhas
 
 ## Link do Snack
 
-- Inserir link publico do projeto no Snack Expo
+https://snack.expo.dev/@ruancorreia/projeto-mobile-unilasalle
