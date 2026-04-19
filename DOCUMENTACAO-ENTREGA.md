@@ -33,9 +33,9 @@ O aplicativo e hibrido e foi criado com React Native. Ele pode rodar com Node.js
 ## Dados do Grupo
 
 - Integrante 1: Ruan da Silva Correia
-- Integrante 2: ********\*\*********\_\_********\*\********* Matricula: **\*\*\*\***\_\_\_\_**\*\*\*\***
-- Integrante 3: ********\*\*********\_\_********\*\********* Matricula: **\*\*\*\***\_\_\_\_**\*\*\*\***
-- Integrante 4: ********\*\*********\_\_********\*\********* Matricula: **\*\*\*\***\_\_\_\_**\*\*\*\***
+- Integrante 2: Victor Thadeu Procópio de Mendonça
+- Integrante 3: Matheus eduardo Silva da matta
+- Integrante 4: Eduarda Dias Vieira Dado
 
 ## Livro Escolhido
 
@@ -44,6 +44,6 @@ O aplicativo e hibrido e foi criado com React Native. Ele pode rodar com Node.js
 
 ## Link do Snack
 
-- Link publico: ********\*\*********\_\_********\*\*********
+- Link publico: https://snack.expo.dev/@ruancorreia/projeto-mobile-unilasalle
 
 
