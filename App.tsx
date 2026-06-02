@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   SafeAreaView,
   StatusBar,
@@ -50,6 +56,104 @@ const COLOR_TO_OPTION: Record<GabaritoCor, Option> = {
   Azul: "C",
   Verde: "D",
 };
+
+const DIGITAL_SEGMENTS: Record<string, string[]> = {
+  "0": ["top", "upperLeft", "upperRight", "lowerLeft", "lowerRight", "bottom"],
+  "1": ["upperRight", "lowerRight"],
+  "2": ["top", "upperRight", "middle", "lowerLeft", "bottom"],
+  "3": ["top", "upperRight", "middle", "lowerRight", "bottom"],
+  "4": ["upperLeft", "upperRight", "middle", "lowerRight"],
+  "5": ["top", "upperLeft", "middle", "lowerRight", "bottom"],
+  "6": ["top", "upperLeft", "middle", "lowerLeft", "lowerRight", "bottom"],
+  "7": ["top", "upperRight", "lowerRight"],
+  "8": [
+    "top",
+    "upperLeft",
+    "upperRight",
+    "middle",
+    "lowerLeft",
+    "lowerRight",
+    "bottom",
+  ],
+  "9": ["top", "upperLeft", "upperRight", "middle", "lowerRight", "bottom"],
+};
+
+function DigitalNumber({ value }: { value: string }) {
+  return (
+    <View style={styles.digitalNumber}>
+      {value.split("").map((digit, index) => {
+        const activeSegments = DIGITAL_SEGMENTS[digit] ?? [];
+
+        return (
+          <View key={`${digit}-${index}`} style={styles.digitalDigit}>
+            <View
+              style={[
+                styles.digitalSegment,
+                styles.segmentHorizontal,
+                styles.segmentTop,
+                activeSegments.includes("top") && styles.digitalSegmentActive,
+              ]}
+            />
+            <View
+              style={[
+                styles.digitalSegment,
+                styles.segmentVertical,
+                styles.segmentUpperLeft,
+                activeSegments.includes("upperLeft") &&
+                  styles.digitalSegmentActive,
+              ]}
+            />
+            <View
+              style={[
+                styles.digitalSegment,
+                styles.segmentVertical,
+                styles.segmentUpperRight,
+                activeSegments.includes("upperRight") &&
+                  styles.digitalSegmentActive,
+              ]}
+            />
+            <View
+              style={[
+                styles.digitalSegment,
+                styles.segmentHorizontal,
+                styles.segmentMiddle,
+                activeSegments.includes("middle") &&
+                  styles.digitalSegmentActive,
+              ]}
+            />
+            <View
+              style={[
+                styles.digitalSegment,
+                styles.segmentVertical,
+                styles.segmentLowerLeft,
+                activeSegments.includes("lowerLeft") &&
+                  styles.digitalSegmentActive,
+              ]}
+            />
+            <View
+              style={[
+                styles.digitalSegment,
+                styles.segmentVertical,
+                styles.segmentLowerRight,
+                activeSegments.includes("lowerRight") &&
+                  styles.digitalSegmentActive,
+              ]}
+            />
+            <View
+              style={[
+                styles.digitalSegment,
+                styles.segmentHorizontal,
+                styles.segmentBottom,
+                activeSegments.includes("bottom") &&
+                  styles.digitalSegmentActive,
+              ]}
+            />
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 function getProgramKey(
   programNumber: number,
@@ -107,6 +211,7 @@ function getCorrectOption(
 
 export default function App() {
   const [bookCodeInput, setBookCodeInput] = useState<string>("");
+  const [programNumberInput, setProgramNumberInput] = useState<string>("");
   const [activeBookCode, setActiveBookCode] = useState<string>("");
   const [activeAnswerKey, setActiveAnswerKey] =
     useState<GabaritoPenseBem | null>(null);
@@ -123,6 +228,7 @@ export default function App() {
   const [finalProgramQuestions, setFinalProgramQuestions] = useState<number[]>(
     [],
   );
+  const programNumberInputRef = useRef<TextInput>(null);
 
   const allQuestions = useMemo(
     () =>
@@ -298,10 +404,41 @@ export default function App() {
     };
   }, [handleAnswer, stage]);
 
+  const handleBookCodeChange = (value: string) => {
+    const nextBookCode = value.replace(/\D/g, "").slice(0, 3);
+
+    setBookCodeInput(nextBookCode);
+    setEntryError("");
+
+    if (nextBookCode.length === 3) {
+      setTimeout(() => programNumberInputRef.current?.focus(), 0);
+    }
+  };
+
+  const handleProgramNumberChange = (value: string) => {
+    const nextProgramNumber = value.replace(/\D/g, "").slice(0, 1);
+
+    setProgramNumberInput(nextProgramNumber);
+
+    if (!nextProgramNumber || /^[1-5]$/.test(nextProgramNumber)) {
+      setEntryError("");
+      return;
+    }
+
+    setEntryError("Programa invalido. Digite um numero de 1 a 5.");
+  };
+
   const startBook = () => {
     const { normalizedCode, answerKey } = getBookAnswerKey(bookCodeInput);
+    const selectedProgramNumber = Number(programNumberInput);
 
     if (!normalizedCode) {
+      return;
+    }
+
+    if (!/^[1-5]$/.test(programNumberInput)) {
+      setEntryError("Programa invalido. Digite um numero de 1 a 5.");
+      programNumberInputRef.current?.focus();
       return;
     }
 
@@ -318,7 +455,7 @@ export default function App() {
     setActiveBookCode(normalizedCode);
     setActiveAnswerKey(answerKey);
     setStage("RUNNING");
-    setProgramNumber(1);
+    setProgramNumber(selectedProgramNumber);
     setQuestionNumber(1);
     setAttemptNumber(1);
     setProgramScore(0);
@@ -346,6 +483,7 @@ export default function App() {
     setActiveBookCode("");
     setActiveAnswerKey(null);
     setBookCodeInput("");
+    setProgramNumberInput("");
     setEntryError("");
     setProgramNumber(1);
     setQuestionNumber(1);
@@ -402,112 +540,132 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
-      {stage === "ENTRY" ? (
-        <View style={styles.entryCard}>
-          <Text style={styles.title}>Digite o numero do livro</Text>
-          <Text style={styles.subtitle}>Pressione Enter para iniciar.</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ex.: 081"
-            placeholderTextColor="#8D8D8D"
-            value={bookCodeInput}
-            onChangeText={(value) => {
-              setBookCodeInput(value.replace(/\D/g, "").slice(0, 3));
-              setEntryError("");
-            }}
-            keyboardType="number-pad"
-            returnKeyType="done"
-            onSubmitEditing={startBook}
-            autoCorrect={false}
-            maxLength={3}
-          />
-          {entryError ? (
-            <Text style={styles.entryError}>{entryError}</Text>
-          ) : null}
-          <TouchableOpacity
-            style={styles.enterButton}
-            onPress={startBook}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.enterButtonText}>Enter</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <>
-          <View style={styles.displayCard}>
-            <Text style={styles.displayMeta}>Livro {activeBookCode}</Text>
-            <Text style={styles.displayMeta}>
-              Programa {String(programNumber).padStart(3, "0")}
-            </Text>
-            <Text style={styles.displayNumber}>
-              {String(questionNumber).padStart(2, "0")}
-            </Text>
-            <Text style={styles.displayMeta}>
-              Pergunta do livro: {String(currentQuestionKey).padStart(3, "0")}
-            </Text>
-            <Text style={styles.displayMeta}>
-              Tentativa {attemptNumber}/{MAX_ATTEMPTS}
-            </Text>
-            <Text style={styles.displayMeta}>Teclas: Q=A, W=B, A=C, S=D</Text>
+      <View style={styles.deviceShell}>
+        <View style={styles.brandBar}>
+          <Text style={styles.brandName}>PENSE BEM</Text>
+          <View style={styles.speaker}>
+            <View style={styles.speakerDot} />
+            <View style={styles.speakerDot} />
+            <View style={styles.speakerDot} />
+            <View style={styles.speakerDot} />
           </View>
+        </View>
 
-          {renderAnswerPanel()}
-
-          {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
-
-          {(stage === "PROGRAM_END" || stage === "BOOK_END") && (
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>
-                Resumo do programa {String(programNumber).padStart(3, "0")}
+        {stage === "ENTRY" ? (
+          <View style={styles.entryCard}>
+            <Text style={styles.title}>Digite livro e programa</Text>
+            <Text style={styles.subtitle}>Programa permitido: 1 a 5.</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Livro: 081"
+              placeholderTextColor="#66744D"
+              value={bookCodeInput}
+              onChangeText={handleBookCodeChange}
+              keyboardType="number-pad"
+              returnKeyType="next"
+              onSubmitEditing={() => programNumberInputRef.current?.focus()}
+              autoCorrect={false}
+              maxLength={3}
+            />
+            <TextInput
+              ref={programNumberInputRef}
+              style={styles.input}
+              placeholder="Programa: 1"
+              placeholderTextColor="#66744D"
+              value={programNumberInput}
+              onChangeText={handleProgramNumberChange}
+              keyboardType="number-pad"
+              returnKeyType="done"
+              onSubmitEditing={startBook}
+              autoCorrect={false}
+              maxLength={1}
+            />
+            {entryError ? (
+              <Text style={styles.entryError}>{entryError}</Text>
+            ) : null}
+            <TouchableOpacity
+              style={styles.enterButton}
+              onPress={startBook}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.enterButtonText}>Enter</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <View style={styles.displayCard}>
+              <Text style={styles.displayMeta}>Livro {activeBookCode}</Text>
+              <Text style={styles.displayMeta}>
+                Programa {String(programNumber).padStart(3, "0")}
               </Text>
-              <Text style={styles.summaryText}>
-                Pontos neste programa: {programScore}
+              <DigitalNumber value={String(questionNumber).padStart(2, "0")} />
+              <Text style={styles.displayMeta}>
+                Pergunta do livro: {String(currentQuestionKey).padStart(3, "0")}
               </Text>
-              <Text style={styles.summaryText}>
-                Pontos totais no livro: {totalScore}
+              <Text style={styles.displayMeta}>
+                Tentativa {attemptNumber}/{MAX_ATTEMPTS}
               </Text>
-
-              {stage === "PROGRAM_END" ? (
-                <TouchableOpacity
-                  style={styles.nextProgramButton}
-                  onPress={startNextProgram}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.nextProgramButtonText}>
-                    {programNumber < REGULAR_PROGRAMS
-                      ? `Iniciar programa ${String(programNumber + 1).padStart(3, "0")}`
-                      : "Iniciar programa 006"}
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
-
-              {stage === "BOOK_END" ? (
-                <View style={styles.resultsBlock}>
-                  <Text style={styles.summaryTitle}>Resultado final</Text>
-                  {programResults.map((result) => (
-                    <Text key={result.programNumber} style={styles.summaryText}>
-                      Programa {String(result.programNumber).padStart(3, "0")}:{" "}
-                      {result.score} ponto(s)
-                    </Text>
-                  ))}
-                </View>
-              ) : null}
+              <Text style={styles.displayMeta}>Teclas: Q=A, W=B, A=C, S=D</Text>
             </View>
-          )}
 
-          <TouchableOpacity
-            style={styles.changeBookButton}
-            onPress={changeBookCode}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.changeBookButtonText}>
-              Trocar codigo do livro
-            </Text>
-          </TouchableOpacity>
-        </>
-      )}
+            {renderAnswerPanel()}
+
+            {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
+
+            {(stage === "PROGRAM_END" || stage === "BOOK_END") && (
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryTitle}>
+                  Resumo do programa {String(programNumber).padStart(3, "0")}
+                </Text>
+                <Text style={styles.summaryText}>
+                  Pontos neste programa: {programScore}
+                </Text>
+                <Text style={styles.summaryText}>
+                  Pontos totais no livro: {totalScore}
+                </Text>
+
+                {stage === "PROGRAM_END" ? (
+                  <TouchableOpacity
+                    style={styles.nextProgramButton}
+                    onPress={startNextProgram}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.nextProgramButtonText}>
+                      {programNumber < REGULAR_PROGRAMS
+                        ? `Iniciar programa ${String(programNumber + 1).padStart(3, "0")}`
+                        : "Iniciar programa 006"}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+
+                {stage === "BOOK_END" ? (
+                  <View style={styles.resultsBlock}>
+                    <Text style={styles.summaryTitle}>Resultado final</Text>
+                    {programResults.map((result) => (
+                      <Text key={result.programNumber} style={styles.summaryText}>
+                        Programa {String(result.programNumber).padStart(3, "0")}:{" "}
+                        {result.score} ponto(s)
+                      </Text>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={styles.changeBookButton}
+              onPress={changeBookCode}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.changeBookButtonText}>
+                Trocar codigo do livro
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -515,74 +673,188 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121417",
-    padding: 20,
+    backgroundColor: "#857A6C",
+    padding: 14,
     justifyContent: "center",
   },
+  deviceShell: {
+    width: "100%",
+    maxWidth: 430,
+    alignSelf: "center",
+    backgroundColor: "#D8D1BE",
+    borderRadius: 8,
+    borderWidth: 3,
+    borderColor: "#5B554E",
+    padding: 18,
+    gap: 14,
+    shadowColor: "#2A2723",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  brandBar: {
+    backgroundColor: "#BBB4A3",
+    borderColor: "#7B756C",
+    borderRadius: 4,
+    borderWidth: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  brandName: {
+    color: "#3A3935",
+    fontSize: 22,
+    fontWeight: "900",
+  },
+  speaker: {
+    flexDirection: "row",
+    gap: 5,
+  },
+  speakerDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "#686258",
+  },
   entryCard: {
-    backgroundColor: "#1E232B",
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: "#080405",
+    borderRadius: 6,
+    borderWidth: 5,
+    borderColor: "#2A2A2A",
+    padding: 18,
     gap: 12,
   },
   title: {
-    color: "#F2F4F8",
-    fontSize: 24,
-    fontWeight: "700",
+    color: "#FF273C",
+    fontSize: 22,
+    fontWeight: "900",
+    fontFamily: "monospace",
+    textShadowColor: "#B00018",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
   subtitle: {
-    color: "#AAB3C0",
+    color: "#C01D2B",
     fontSize: 14,
+    fontWeight: "700",
+    fontFamily: "monospace",
   },
   entryError: {
-    color: "#FF8A80",
+    color: "#FF6B76",
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "800",
+    fontFamily: "monospace",
   },
   input: {
-    backgroundColor: "#101319",
-    color: "#F2F4F8",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#394150",
+    backgroundColor: "#120507",
+    color: "#FF273C",
+    borderRadius: 4,
+    borderWidth: 3,
+    borderColor: "#3B1116",
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 18,
+    fontSize: 22,
+    fontWeight: "900",
+    fontFamily: "monospace",
+    textShadowColor: "#B00018",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
   enterButton: {
-    backgroundColor: "#2A6BF2",
-    borderRadius: 10,
+    backgroundColor: "#2F3130",
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: "#111111",
     paddingVertical: 14,
     alignItems: "center",
   },
   enterButtonText: {
-    color: "#FFFFFF",
+    color: "#F3EBDD",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "900",
   },
   displayCard: {
-    backgroundColor: "#0F1217",
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: "#2E3440",
+    backgroundColor: "#080405",
+    borderRadius: 6,
+    borderWidth: 5,
+    borderColor: "#2A2A2A",
     padding: 18,
-    marginBottom: 16,
     gap: 6,
   },
   displayMeta: {
-    color: "#AAB3C0",
+    color: "#D62031",
     fontSize: 14,
-    fontWeight: "600",
-  },
-  displayNumber: {
-    color: "#F2F4F8",
-    fontSize: 54,
     fontWeight: "800",
-    letterSpacing: 4,
+    fontFamily: "monospace",
+    textShadowColor: "#9A0013",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 6,
+  },
+  digitalNumber: {
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 4,
+  },
+  digitalDigit: {
+    width: 40,
+    height: 64,
+    position: "relative",
+  },
+  digitalSegment: {
+    position: "absolute",
+    backgroundColor: "#26070A",
+    borderRadius: 3,
+  },
+  digitalSegmentActive: {
+    backgroundColor: "#FF1E35",
+    shadowColor: "#E0001F",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  segmentHorizontal: {
+    width: 30,
+    height: 7,
+    left: 5,
+  },
+  segmentVertical: {
+    width: 7,
+    height: 24,
+  },
+  segmentTop: {
+    top: 0,
+  },
+  segmentMiddle: {
+    top: 29,
+  },
+  segmentBottom: {
+    bottom: 0,
+  },
+  segmentUpperLeft: {
+    left: 0,
+    top: 6,
+  },
+  segmentUpperRight: {
+    right: 0,
+    top: 6,
+  },
+  segmentLowerLeft: {
+    left: 0,
+    bottom: 6,
+  },
+  segmentLowerRight: {
+    right: 0,
+    bottom: 6,
   },
   answerPanel: {
-    backgroundColor: "#1E232B",
-    borderRadius: 14,
+    backgroundColor: "#A59D8E",
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#6F675C",
     padding: 14,
     gap: 10,
   },
@@ -593,7 +865,9 @@ const styles = StyleSheet.create({
   answerButton: {
     flex: 1,
     height: 76,
-    borderRadius: 10,
+    borderRadius: 6,
+    borderWidth: 3,
+    borderColor: "#2E2B27",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -612,59 +886,70 @@ const styles = StyleSheet.create({
   answerText: {
     color: "#FFFFFF",
     fontSize: 30,
-    fontWeight: "800",
+    fontWeight: "900",
   },
   answerTextDark: {
     color: "#111111",
   },
   feedback: {
-    color: "#D5DEEB",
-    marginTop: 12,
+    color: "#292823",
+    backgroundColor: "#EFE7D3",
+    borderColor: "#8E8678",
+    borderRadius: 5,
+    borderWidth: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     fontSize: 15,
+    fontWeight: "800",
     textAlign: "center",
   },
   summaryCard: {
-    marginTop: 14,
-    backgroundColor: "#1E232B",
-    borderRadius: 12,
+    backgroundColor: "#EFE7D3",
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#8E8678",
     padding: 14,
     gap: 8,
   },
   summaryTitle: {
-    color: "#FFFFFF",
+    color: "#2F302B",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "900",
   },
   summaryText: {
-    color: "#D5DEEB",
+    color: "#424037",
     fontSize: 14,
+    fontWeight: "700",
   },
   nextProgramButton: {
     marginTop: 10,
-    backgroundColor: "#2A6BF2",
-    borderRadius: 10,
+    backgroundColor: "#2F3130",
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: "#111111",
     paddingVertical: 12,
     alignItems: "center",
   },
   nextProgramButtonText: {
-    color: "#FFFFFF",
+    color: "#F3EBDD",
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "900",
   },
   resultsBlock: {
     marginTop: 8,
     gap: 4,
   },
   changeBookButton: {
-    marginTop: 12,
-    backgroundColor: "#2A2F38",
-    borderRadius: 10,
+    backgroundColor: "#6D675E",
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: "#47423C",
     paddingVertical: 12,
     alignItems: "center",
   },
   changeBookButtonText: {
-    color: "#F2F4F8",
+    color: "#F3EBDD",
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "900",
   },
 });
