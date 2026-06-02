@@ -44,6 +44,6 @@ O aplicativo e hibrido e foi criado com React Native. Ele pode rodar com Node.js
 
 ## Link do Snack
 
-- Link publico: https://snack.expo.dev/@ruancorreia/projeto-mobile-unilasalle
+- Link publico: https://snack.expo.dev/@ruancorreia/pense-bem-g2
 
 
